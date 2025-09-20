@@ -1,5 +1,5 @@
 // agendar-notificacao
-const { Client, Databases, ID } = require('node-appwrite');
+const { Client, Databases, ID } = require('appwrite');
 
 module.exports = async ({ req, res, log }) => {
   // Validação de entrada
