@@ -1,3 +1,4 @@
+// enviar-agendamentos
 const { Client, Databases, Messaging, Query } = require('node-appwrite');
 
 module.exports = async ({ res, log }) => {
