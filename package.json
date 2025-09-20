@@ -1,0 +1,9 @@
+{
+  "name": "agendar-notificacao",
+  "version": "1.0.0",
+  "description": "Appwrite function to schedule a push notification.",
+  "main": "src/index.js",
+  "dependencies": {
+    "node-appwrite": "^12.0.1"
+  }
+}
