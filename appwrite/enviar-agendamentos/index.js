@@ -1,4 +1,4 @@
-const { Client, Databases, Messaging, Query } = require('node-appwrite');
+const { Client, Databases, Messaging, Query } = require('appwrite');
 
 // Função auxiliar para criar uma pausa (delay)
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
