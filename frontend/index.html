@@ -896,7 +896,7 @@ async function agendarNotificacao(userId, hora, payload) {
     try {
         console.log(`Enviando agendamento para ${targetTimeISO}...`);
         const resultado = await functions.createExecution(
-            'agendar-notificacao', // ID da sua função de agendamento
+            '68cf1fc2002e437c4272', // ID da sua função de agendamento
             JSON.stringify({
                 userId: userId,
                 targetTime: targetTimeISO,
