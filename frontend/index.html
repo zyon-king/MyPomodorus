@@ -28,7 +28,7 @@
             font-family: 'Orbitron', sans-serif;
             background-image: var(--cor-fundo);
             color: var(--cor-texto);
-            .text-shadow: 0 0 3px rgba(0, 255, 204, 0.8), 0 0 0.5px rgba(0, 255, 204, 0.6);
+            /**text-shadow: 0 0 3px rgba(0, 255, 204, 0.8), 0 0 0.5px rgba(0, 255, 204, 0.6);*/
             display: flex; /* Makes the body a flex container */
             flex-direction: column; /* Stacks children vertically */
             justify-content: flex-start; /* Aligns children to the start of the flex container */
@@ -517,42 +517,81 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
         <p>&copy; 2025 MyPomodorus. Todos os direitos reservados - ZyonKing | Fontanari,C.</p>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@20.0.0"></script>
-    
+<script src="https://cdn.jsdelivr.net/npm/appwrite@20.0.0"></script>
 <script>
-// ===================
-// Bloco - INICIALIZAÇÃO APPWRITE | Início
-// ===================
-const { Client, Account, Functions } = Appwrite;
 
-const client = new Client();
-client
-    .setEndpoint('https://cloud.appwrite.io/v1') // Seu endpoint do Appwrite
-    .setProject('SEU_PROJECT_ID'); // O ID do seu projeto
+    // ===================
+    // CONFIGURAÇÕES GLOBAIS
+    // ===================
+    // Coloque seus IDs aqui para facilitar a manutenção
+    const PROJECT_ID = '686a67d5003a1b4b1bf9'; // SEU PROJECT ID
+    const AGENDAR_FUNCTION_ID = '68cf1fc2002e437c4272';  // O ID da sua função de agendamento
 
-const account = new Account(client);
-const functions = new Functions(client);
+    // ===================
+    // INICIALIZAÇÃO APPWRITE
+    // ===================
+    const client = new Appwrite.Client()
+    .setEndpoint('https://nyc.cloud.appwrite.io/v1')
+    .setProject(PROJECT_ID);
 
-let currentUser = null;
+    const account = new Appwrite.Account(client);
+    const functions = new Appwrite.Functions(client);
+    
+    let currentUser = null;
 
-// Função para criar uma sessão anônima e obter o ID do usuário
-async function loginAnonimo() {
-    try {
-        // Tenta obter o usuário atual
-        currentUser = await account.get();
-        console.log('Sessão existente para o usuário:', currentUser.$id);
-    } catch (error) {
-        // Se não houver sessão, cria uma nova
-        console.log('Nenhuma sessão encontrada. Criando uma nova...');
+    // Função para criar uma sessão anônima e obter o ID do usuário
+    async function loginAnonimo() {
         try {
-            const session = await account.createAnonymousSession();
             currentUser = await account.get();
-            console.log('Nova sessão anônima criada com sucesso! ID do Usuário:', currentUser.$id);
-        } catch (e) {
-            console.error('Falha ao criar sessão anônima:', e);
+            console.log('Sessão existente para o usuário:', currentUser.$id);
+        } catch (error) {
+            try {
+                await account.createAnonymousSession();
+                currentUser = await account.get();
+                console.log('Nova sessão anônima criada! ID do Usuário:', currentUser.$id);
+            } catch (e) {
+                console.error('Falha ao criar sessão anônima:', e);
+            }
         }
     }
-}
+
+    // Função para chamar o backend e agendar a notificação
+    async function agendarNotificacao(userId, hora, payload) {
+        const [horas, minutos] = hora.split(':');
+        const dataAlvo = new Date();
+        dataAlvo.setHours(horas, minutos, 0, 0);
+
+        if (dataAlvo < new Date()) {
+            dataAlvo.setDate(dataAlvo.getDate() + 1);
+        }
+        const targetTimeISO = dataAlvo.toISOString();
+
+        try {
+            console.log(`Enviando agendamento para ${targetTimeISO}...`);
+            const resultado = await functions.createExecution(
+                AGENDAR_FUNCTION_ID, // Usando a constante
+                JSON.stringify({
+                    userId: userId,
+                    targetTime: targetTimeISO,
+                    payload: payload
+                })
+            );
+            console.log('Agendamento enviado com sucesso!', resultado);
+            alert(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
+        } catch (error) {
+            console.error('Falha ao agendar notificação:', error);
+            alert('Ocorreu um erro ao agendar o alarme.');
+        }
+    }
+
+    // Função para registrar o Service Worker
+    function registrarServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registrado:', reg))
+                .catch(err => console.error('Falha ao registrar Service Worker:', err));
+        }
+    }
 // ===================
 // Bloco - INICIALIZAÇÃO APPWRITE | Fim
 // ===================
@@ -601,7 +640,7 @@ async function loginAnonimo() {
             mainAudio.play()          // Toca novamente
                 .then(() => {
                     console.log('Áudio terminou e foi reiniciado por mainAudio.addEventListener().');
-                    // Você pode adicionar um appendLog aqui se quiser registrar cada reinício
+                    // Você pode adicionar um console.log aqui se quiser registrar cada reinício
                 })
                 .catch(error => {
                     console.error('Erro ao reiniciar áudio manualmente:', error.message);
@@ -981,9 +1020,9 @@ const popupModalOverlay = document.getElementById('popup-modal-overlay');
 	        	})
 	        	.catch(error => {
 	        	    // Handle cases where autoplay is blocked or other errors occur
-	        	    appendLog(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
+	        	    console.error(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
 	        	    // If audio fails to play, don't start the counter (or handle it differently)
-	        	    appendLog("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
+	        	    console.error("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
 	        	}); 
 
             popupModalOverlay.classList.remove('active');
@@ -1001,35 +1040,43 @@ const popupModalOverlay = document.getElementById('popup-modal-overlay');
 	                })
 	                .catch(error => {
 	                    // Handle cases where autoplay is blocked or other errors occur
-	                    appendLog(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
+	                    console.error(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
 	                    // If audio fails to play, don't start the counter (or handle it differently)
-	                    appendLog("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
+	                    console.error("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
 	                }); 
             }
         });
         
 // ===================
-// Nova Função de Inicialização
+// Função de Inicialização
 // ===================
 function init() {
-	volumeSlider.value = currentVolume;
-    loginAnonimo();
-    // Exibe a mensagem inicial de "Nenhuma pausa ativa"
+    volumeSlider.value = currentVolume;
     renderPausas();
-
-    // Garante que o input de duração não esteja visível no início
-    // Isso é opcional, mas garante que a interface comece no estado certo.
     toggleInputs();
-    
-    // Chama a função para exibir o relógio imediatamente
     atualizarRelogio();
-    // Inicia a atualização do relógio a cada segundo
     setInterval(atualizarRelogio, 1000);
+    
+    // Inicializar Appwrite após o relógio estar funcionando
+    loginAnonimo();
+    registrarServiceWorker();
 }
 
-// Chama a função de inicialização quando a página é carregada
-init();
+// Aguardar o DOM estar pronto
+document.addEventListener('DOMContentLoaded', init);
 
+// E adicione esta nova função em algum lugar do seu script
+function registrarServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('Service Worker registrado com sucesso:', registration);
+      })
+      .catch(error => {
+        console.error('Falha ao registrar o Service Worker:', error);
+      });
+  }
+}
 </script>
 </body>
 </html>
