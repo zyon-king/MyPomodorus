@@ -555,35 +555,6 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
         }
     }
 
-    // Função para chamar o backend e agendar a notificação
-    async function agendarNotificacao(userId, hora, payload) {
-        const [horas, minutos] = hora.split(':');
-        const dataAlvo = new Date();
-        dataAlvo.setHours(horas, minutos, 0, 0);
-
-        if (dataAlvo < new Date()) {
-            dataAlvo.setDate(dataAlvo.getDate() + 1);
-        }
-        const targetTimeISO = dataAlvo.toISOString();
-
-        try {
-            console.log(`Enviando agendamento para ${targetTimeISO}...`);
-            const resultado = await functions.createExecution(
-                AGENDAR_FUNCTION_ID, // Usando a constante
-                JSON.stringify({
-                    userId: userId,
-                    targetTime: targetTimeISO,
-                    payload: payload
-                })
-            );
-            console.log('Agendamento enviado com sucesso!', resultado);
-            alert(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
-        } catch (error) {
-            console.error('Falha ao agendar notificação:', error);
-            alert('Ocorreu um erro ao agendar o alarme.');
-        }
-    }
-
     // Função para registrar o Service Worker
     function registrarServiceWorker() {
         if ('serviceWorker' in navigator) {
@@ -860,11 +831,11 @@ pausaForm.addEventListener('submit', async (e) => {
 
     // 1. Agendar o INÍCIO
     const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
-    await agendarNotificacao(currentUser.$id, inicio, inicioPayload);
+    enviarMensagemParaSW(currentUser.$id, inicio, inicioPayload);
 
     // 2. Agendar o FIM
     const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar!` };
-    await agendarNotificacao(currentUser.$id, fim, fimPayload);
+    enviarMensagemParaSW(currentUser.$id, fim, fimPayload);
     
     // O resto da sua lógica para exibir na tela pode continuar aqui...
     const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
@@ -1046,7 +1017,30 @@ const popupModalOverlay = document.getElementById('popup-modal-overlay');
 	                }); 
             }
         });
-        
+
+// Função enviar Mensagem Para SW
+function enviarMensagemParaSW(userId, hora, payload) {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    const [horas, minutos] = hora.split(':');
+    const dataAlvo = new Date();
+    dataAlvo.setHours(horas, minutos, 0, 0);
+    if (dataAlvo < new Date()) {
+      dataAlvo.setDate(dataAlvo.getDate() + 1);
+    }
+
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SCHEDULE_ALARM',
+      userId: userId,
+      time: dataAlvo.toISOString(),
+      payload: payload
+    });
+    console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
+    alert(`Alarme para "${payload.title}" agendado localmente!`); // Feedback para o usuário
+  } else {
+    console.error('Service Worker não está ativo para agendar o alarme.');
+    alert('Não foi possível agendar o alarme. Por favor, recarregue a página.');
+  }
+}
 // ===================
 // Função de Inicialização
 // ===================
