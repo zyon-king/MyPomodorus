@@ -1,67 +1,49 @@
-/**
- * Service Worker para o My Pomodorus
- */
+// sw.js - Versão inteligente com agendamento local
 
-// Evento 'install': Acionado quando o Service Worker é registrado pela primeira vez.
-self.addEventListener('install', event => {
-  console.log('[Service Worker] Instalado com sucesso!');
-  
-  // Força o novo Service Worker a se tornar ativo imediatamente,
-  // garantindo que as atualizações sejam aplicadas rapidamente.
-  self.skipWaiting();
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', () => self.clients.claim());
+
+// O Service Worker recebe uma mensagem da sua página principal
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SCHEDULE_ALARM') {
+    const { userId, time, payload } = event.data;
+
+    const targetTime = new Date(time).getTime();
+    const now = Date.now();
+    const delay = targetTime - now;
+
+    if (delay > 0) {
+      console.log(`[SW] Alarme agendado para tocar em ${delay / 1000} segundos.`);
+      
+      setTimeout(() => {
+        console.log('[SW] Hora do alarme! Chamando a função Appwrite...');
+        
+        // Quando o tempo acabar, chama a função para disparar o Push
+        fetch('URL_DA_SUA_FUNCAO', { // IMPORTANTE: Substitua a URL
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Appwrite-Project': 'SEU_PROJECT_ID', // IMPORTANTE: Substitua o ID
+          },
+          body: JSON.stringify({
+            userId: userId,
+            title: payload.title,
+            body: payload.body,
+          }),
+        });
+      }, delay);
+    }
+  }
 });
 
-// Evento 'activate': Acionado quando o Service Worker se torna ativo.
-self.addEventListener('activate', event => {
-  console.log('[Service Worker] Ativado com sucesso!');
-  // Garante que o Service Worker controle a página imediatamente.
-  return self.clients.claim();
-});
-
-// Evento 'push': É aqui que a mágica acontece.
-// Acionado sempre que uma notificação push é recebida do servidor.
+// Este código abaixo continua o mesmo, para quando a notificação PUSH chegar
 self.addEventListener('push', event => {
-  console.log('[Service Worker] Notificação Push recebida!');
-
-  // Os dados enviados pela nossa Função Appwrite chegam aqui.
-  // Esperamos um JSON com 'title' e 'body'.
   const data = event.data.json();
-
-  const title = data.title || 'Alarme My Pomodorus';
+  const title = data.title || 'Alarme';
   const options = {
-    body: data.body || 'Sua pausa programada está chamando!',
-    icon: 'icon-192x192.png', // IMPORTANTE: Crie um ícone com este nome e tamanho
-    badge: 'badge-72x72.png',    // IMPORTANTE: Crie um ícone menor para a barra de status
-    vibrate: [200, 100, 200, 100, 200], // Padrão de vibração para chamar a atenção
+    body: data.body || 'Sua pausa está chamando!',
+    icon: 'icon-192x192.png',
+    vibrate: [200, 100, 200],
   };
-
-  // Pede ao navegador para não encerrar o Service Worker
-  // até que a notificação seja completamente exibida.
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
-
-// Evento 'notificationclick': Opcional, mas muito útil.
-// Define o que acontece quando o usuário clica na notificação.
-self.addEventListener('notificationclick', event => {
-  // Fecha a notificação que foi clicada.
-  event.notification.close();
-
-  // Tenta focar em uma aba já aberta do site.
-  // Se não houver nenhuma, abre uma nova aba.
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      if (clientList.length > 0) {
-        let client = clientList[0];
-        for (let i = 0; i < clientList.length; i++) {
-          if (clientList[i].focused) {
-            client = clientList[i];
-          }
-        }
-        return client.focus();
-      }
-      return clients.openWindow('/');
-    })
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
