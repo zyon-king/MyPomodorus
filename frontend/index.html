@@ -1,1 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Pomodorus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cor-principal: linear-gradient(-135deg, #171627, #111d4a, #171627, #111d4a);
+            --cor-secundaria: #660033; /* Vinho Escuro */
+            --cor-acento: #993366; /* Tom mais claro de Vinho */
+            --cor-texto: #00ccff; /* Azul neon */
+            --cor-fundo: linear-gradient(135deg, #000000, #3b0047, #660000, #000000); /* Gradiente de fundo */
+            --sombra-leve: 0 4px 6px rgba(0, 0, 0, 0.2);
+            --transicao-suave: all 0.3s ease-in-out;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-image: var(--cor-fundo);
+            color: var(--cor-texto);
+            .text-shadow: 0 0 3px rgba(0, 255, 204, 0.8), 0 0 0.5px rgba(0, 255, 204, 0.6);
+            display: flex; /* Makes the body a flex container */
+            flex-direction: column; /* Stacks children vertically */
+            justify-content: flex-start; /* Aligns children to the start of the flex container */
+            align-items: center; /* Centers children horizontally */
+            margin: 0; /* Remove default body margin */
+            padding: 0; /* Remove default body padding */
+            text-rendering: optimizeLegibility;
+        }
+
+        @keyframes slideFromTop {
+          from {
+            transform: translate(0, -100%); /* começa fora da tela */
+            opacity: 0;
+          }
+          to {
+            transform: translate(0, 1.0rem); /* posição normal */
+            opacity: 1;
+          }
+        }
+        
+        .container {
+          top: 0.5rem;
+          border-bottom: 5%;
+          animation: slideFromTop 0.6s ease forwards;
+          
+          background-image: var(--cor-principal);
+          padding: 3rem 2.5rem;
+          border-radius: 15px;
+          border: 3px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+          max-width: 500px;
+          width: 90%;
+        }
+
+        form, .form-group {
+            display: flex;
+            flex-direction: column; /* Este é o ajuste chave */
+            align-items: center;
+            gap: 0.5rem; /* Adiciona um pequeno espaço entre os itens */
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--cor-texto);
+        }
+
+        .form-group {
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--cor-texto);
+        }
+
+        .form-group input[type="time"], .form-group input[type="text"] {
+            width: ;
+            padding: 0.5rem 1rem;
+            background-image: var(--cor-fundo);
+            border: 2px solid var(--cor-principal);
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-size: 1rem;
+            transition: var(--transicao-suave);
+            appearance: none;
+        }
+        
+        /* Personalização do input type="time" */
+        .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+            background-color: var(--cor-acento);
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transicao-suave);
+        }
+        
+        .form-group input[type="text"]:focus,
+.form-group input[type="time"]:focus {
+            outline: none;
+            border-color: var(--cor-acento);
+            box-shadow: 0 0 0 3px rgba(153, 51, 102, 0.5);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 0.75rem;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background-color: var(--cor-fundo);
+            border: 2px solid var(--cor-acento);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transicao-suave);
+        }
+
+        .checkbox-container input[type="checkbox"]:checked {
+            background-color: var(--cor-acento);
+            border-color: var(--cor-acento);
+        }
+
+        .checkbox-container input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--cor-texto);
+            border-radius: 2px;
+            transform: scale(1);
+            transition: var(--transicao-suave);
+        }
+
+        .checkbox-container label {
+            font-size: 1rem;
+            color: var(--cor-texto);
+            user-select: none;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center; /* Centraliza os botões horizontalmente */
+            gap: 1rem; /* Adiciona um espaço de 16px entre os botões */
+        }
+        
+        .btn-general {
+            width: 50%;
+            margin-bottom: 1.8rem;
+            padding: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background-color: var(--cor-secundaria);
+            color: var(--cor-texto);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transicao-suave);
+            box-shadow: var(--sombra-leve);
+
+            /* Adicione esta linha: */
+            white-space: nowrap; 
+        }
+
+        .btn-general:hover {
+            background-color: var(--cor-acento);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .remove-btn {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: var(--cor-secundaria);
+            color: var(--cor-texto);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: #a04070;
+        }
+        
+        #pauses-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #2b3a5b; /* Uma cor um pouco mais clara que o fundo */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+                
+        /* --- Modal para Popup --- */
+        .popup-modal-overlay {
+            position: fixed; /* Fixa o elemento na janela de visualização */
+            top: 0; /* Começa no topo da tela */
+            left: 0;
+            width: 100%; /* Ocupa toda a largura */
+            height: 100%; /* Ocupa toda a altura da viewport */
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center; /* Centraliza o conteúdo (config-modal-content) horizontalmente */
+            align-items: flex-start; /* Alinha o conteúdo (config-modal-content) no topo */
+            z-index: 200;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s ease-in-out;
+        }
+
+        .popup-modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Você também pode precisar ajustar o gist-modal-content para não ter margem superior extra */
+        .popup-modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%; /* Ajusta a largura para ser responsiva, por exemplo, 90% */
+            max-width: 400px; /* Mantém uma largura máxima para não ficar muito largo em telas grandes */
+            height: auto; /* Permite que a altura se ajuste ao conteúdo */
+            text-align: center; /* Centraliza o texto dentro do modal */
+            margin-top: 5%; /* Adiciona uma margem do topo para que não cole na parte superior da tela */
+            margin-bottom: 5%; /* Adiciona margem na parte inferior para respiro */
+            overflow-y: auto; /* Adiciona rolagem se o conteúdo exceder a altura do modal */
+            /* Remove 'max-width: 400px;' se você já tiver no .config-modal-content */
+        }
+        
+        /* Estilos do Footer */
+        footer {
+            justify-content: center;
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            font-size: 0.9em;
+            color: white;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+            margin-top: 2rem; /* Pushes the footer to the bottom of the flex container */
+        }
+        
+        /* @media (max-width: 768px) {
+          .container {
+            padding: 2rem 1.5rem;
+            border-radius: 10px;
+            height: 90%;
+            max-height: 95%;
+          }
+        } */
+        
+        /* --- Ajuste para o volume --- */
+        .volume-container {
+            margin-bottom: 20px; /* Espaço abaixo do botão de volume */
+            display: flex; /* Para centralizar o botão de volume dentro do container */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column; /* Para empilhar o botão e os controles */
+    		    transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        /* Nova regra CSS: Aplica a borda e sombra quando a classe `has-controls-active` está presente */
+        .volume-container.has-controls-active {        
+            background-image: var(--cor-fundo);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1); /* Sombra interna para profundidade */
+            border-radius: 12px; /* Arredonde as bordas para combinar */
+            padding: 10px; /* Adicione um padding para a borda não encostar no conteúdo */
+            
+            /*border: 2px solid #00ccff; Cor da borda neon, por exemplo */            
+            /*box-shadow: 0 0 15px rgba(0, 204, 255, 0.5), Sombra neon azul */
+                        /* inset 0 0 8px rgba(0, 204, 255, 0.3);  Sombra interna neon */
+        }
+        .volume-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .volume-button:hover {
+            background-color: #0056b3;
+        }
+
+        .volume-controls {
+            display: none;
+            margin-top: 20px;
+            padding-top: 15px;
+            animation: fadeIn 0.3s ease-in-out forwards;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .volume-controls.active {
+            position: relative;
+            display: flex;/* Adicione um fundo e padding para que pareça uma "camada" dentro do modal */
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .volume-slider-container {
+            /* Define este container como flex para alinhar seus filhos (volume-adjust-buttons) */
+            display: flex;
+            justify-content: center; /* Centraliza a div volume-adjust-buttons horizontalmente */
+            align-items: center; /* Alinha verticalmente se houver diferença de altura */
+            width: 100%;
+            max-width: 300px; /* Define uma largura máxima para o conjunto slider + botões */
+            margin: 0 auto; /* Centraliza o volume-slider-container dentro de seu pai */
+        }
+
+        .volume-adjust-buttons {
+            /* Transforma esta div em um flex container para seus próprios filhos (botões e slider) */
+            display: flex;
+            align-items: center; /* Alinha os botões e o slider verticalmente */
+            gap: 10px; /* Espaçamento entre os elementos (botão -, slider, botão +) */
+            width: 100%; /* Garante que ela ocupe a largura total do volume-slider-container */
+        }
+
+        .volume-slider {
+            flex-grow: 1; /* Permite que o slider ocupe o espaço restante, centralizando-se */
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section-title">
+    		<h1>My Pomodorus</h1>
+            <h2 id="relogio">00:00:00</h2>
+
+        </div>
+        
+        <div class="volume-container">
+            <button id="volumeButton" class="volume-button">
+                <i class="material-icons">volume_up</i>
+            </button>
+            <div id="volumeControls" class="volume-controls">
+                <div class="volume-slider-container" >
+                    <i class="material-icons">volume_up</i>
+                    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50" style="display: none;">
+                </div>
+                <spam style="text-align:center;">O site mantém um áudio tocando em um volume "inaudível" e impede o navegador de suspender a página e bloquear o toque dos alarmes.</spam>
+                
+                <strong style="text-align:center;">Alternativa:</strong>
+                <p style="text-align:justify;">
+				Você pode adicionar o site à lista de exceções do "Economia de Memória" do Chrome.<br><br>
+
+> Etapa 1/5 | No Chrome, clique nos três pontos verticais no canto superior direito.<br><br>
+
+> Etapa 2/5 | Vá em Configurações.<br><br>
+
+> Etapa 3/5 | No menu lateral, clique em Desempenho/Performance.<br><br>
+
+> Etapa 4/5 | Procure a seção Economia de Memória e clique em "Adicionar" na parte "Sempre manter estes sites ativos".<br><br>
+
+> Etapa 5/5 | Adicione/Selecione a URL do site de despertador.<br><br>
+
+Isso garantirá que, mesmo com a função de economia de memória ativada, a aba do site permaneça ativa e não seja suspensa pelo navegador.
+                </p>
+                
+                <spam style="text-align:center;">Verifique frequentemente o ícone de reprodução de mídia do navegador.</spam>
+                
+                <div class="image-container">
+                    <img src="https://files.catbox.moe/2v8m64.PNG" alt="Imagem Exemplo">
+                </div>
+            </div>
+        </div>
+        
+        <form>
+            <div class="form-group">
+                <label for="inicio">Início</label>
+                <input type="time" id="inicio" name="inicio" required>
+            </div>
+            
+            <div class="form-group">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label>
+                        <input type="radio" id="radioFim" name="modoPausa" value="fim" checked> Fim
+                    </label>
+                    <label>
+                        <input type="radio" id="radioDuracao" name="modoPausa" value="duracao"> Duração
+                    </label>
+                </div>
+
+                <div class="form-group" id="inputFimGroup">
+                    <label for="fim">Fim</label>
+                    <input type="time" id="fim" name="fim">
+                </div>
+
+                <div class="form-group" id="inputDuracaoGroup" style="display: none;">
+                    <label for="duracao">Duração</label>
+                    <input type="time" id="duracao" name="duracao">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-general">Criar</button>
+
+            <div class="form-group" id="salvarPausasSection" style="display:none;">
+                    <label for="tokenInput">Token das Pausas:</label>
+                    <input type="text" id="tokenInput" name="token">
+                    <p id="statusMessage" style="color:red; text-align:center; margin-top: 10px;"></p>
+					<section class="buttons">
+                    <button type="button" class="btn-general" id="copiarBtn">Copiar</button>
+                    <button type="button" class="btn-general" id="fecharSalvarBtn">Fechar</button>
+					</section>
+            </div>
+    
+            <div class="form-group" id="carregarPausasSection" style="display:none;">
+                    <label for="loadInput">Carregar Pausas:</label>
+                    <input type="text" id="loadInput" name="load">
+                    <p id="statusMessage" style="color:red; text-align:center; margin-top: 10px;"></p>
+					<section class="buttons">
+					<button type="button" class="btn-general" id="carregarTokenBtn">Carregar</button>
+                    <button type="button" class="btn-general" id="fecharCarregarBtn">Fechar</button>
+                    </section>
+          	</div>
+            
+            <section class="buttons">
+            <button type="button" class="btn-general" id="salvarPausasBtn">Salvar Pausas</button>
+
+            <button type="button" class="btn-general" id="carregarPausasBtn">Carregar Pausas</button>
+            </section>
+            
+			</form>
+        
+        <br>
+        
+        <section id="active-pauses">
+            <h2 class="section-title">Pausas Ativas:</h2>
+            <ul id="pauses-list"></ul>
+        </section>
+    </div>    
+
+    <div class="popup-modal-overlay" id="popup-modal-overlay">
+        <div class="popup-modal-content">
+            <h3>Toque do alarme iniciado.</h3>
+            
+            <div class="buttons">
+                <button id="popup-modal-stop-alarm" class="btn-general">Parar</button>                
+        	</div>
+        </div>
+	</div>
+	
+    <footer>
+        <p>&copy; 2025 MyPomodorus. Todos os direitos reservados - ZyonKing | Fontanari,C.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@20.0.0"></script>
+    
+<script>
+// ===================
+// Bloco - INICIALIZAÇÃO APPWRITE | Início
+// ===================
+const { Client, Account, Functions } = Appwrite;
+
+const client = new Client();
+client
+    .setEndpoint('https://cloud.appwrite.io/v1') // Seu endpoint do Appwrite
+    .setProject('SEU_PROJECT_ID'); // O ID do seu projeto
+
+const account = new Account(client);
+const functions = new Functions(client);
+
+let currentUser = null;
+
+// Função para criar uma sessão anônima e obter o ID do usuário
+async function loginAnonimo() {
+    try {
+        // Tenta obter o usuário atual
+        currentUser = await account.get();
+        console.log('Sessão existente para o usuário:', currentUser.$id);
+    } catch (error) {
+        // Se não houver sessão, cria uma nova
+        console.log('Nenhuma sessão encontrada. Criando uma nova...');
+        try {
+            const session = await account.createAnonymousSession();
+            currentUser = await account.get();
+            console.log('Nova sessão anônima criada com sucesso! ID do Usuário:', currentUser.$id);
+        } catch (e) {
+            console.error('Falha ao criar sessão anônima:', e);
+        }
+    }
+}
+// ===================
+// Bloco - INICIALIZAÇÃO APPWRITE | Fim
+// ===================
+    const mainAudio = new Audio('https://raw.githubusercontent.com/w3teal/awesome-ringtone/main/Google%20Pixel/2021%20-%20Your%20New%20Adventure.mp3');
+        
+    const notificationSound = new Audio('https://github.com/w3teal/awesome-ringtone/raw/refs/heads/main/Vivo/2022%20-%20Indomitable%20will.mp3'); // Certifique-se de ter um arquivo notification.mp3
+    notificationSound.loop = true;
+    
+    const salvarBtn = document.getElementById('salvarPausasBtn');
+    const carregarBtn = document.getElementById('carregarPausasBtn');
+    const salvarSection = document.getElementById('salvarPausasSection');
+    const carregarSection = document.getElementById('carregarPausasSection');
+
+    const fecharSalvarBtn = document.getElementById('fecharSalvarBtn');
+    const fecharCarregarBtn = document.getElementById('fecharCarregarBtn');
+
+    salvarBtn.addEventListener('click', () => {
+        salvarSection.style.display = 'block';
+        carregarSection.style.display = 'none';
+    });
+
+    carregarBtn.addEventListener('click', () => {
+        mainAudio.play();
+        carregarSection.style.display = 'block';
+        salvarSection.style.display = 'none';
+    });
+
+    fecharSalvarBtn.addEventListener('click', () => {
+        salvarSection.style.display = 'none';
+    });
+
+    fecharCarregarBtn.addEventListener('click', () => {
+        carregarSection.style.display = 'none';
+    });
+
+        // ============================================
+        // TOCAR AUDIO PARA MANTER ATIVIDADE DA PAGINA:
+        // ============================================
+        
+        let currentVolume = 0.20; // Volume visível no slider (0-100)
+        let reservedVolume = 0.19;  // Volume reservado (não acessível pela interface)
+
+        // Rewind to the beginning
+        mainAudio.addEventListener('ended', () => {
+            mainAudio.currentTime = 0; // Volta para o início
+            mainAudio.play()          // Toca novamente
+                .then(() => {
+                    console.log('Áudio terminou e foi reiniciado por mainAudio.addEventListener().');
+                    // Você pode adicionar um appendLog aqui se quiser registrar cada reinício
+                })
+                .catch(error => {
+                    console.error('Erro ao reiniciar áudio manualmente:', error.message);
+                    console.error(`Erro ao reiniciar áudio: ${error.message}.`);
+                });
+        });
+        
+        const volumeContainer = document.querySelector('.volume-container');
+        const volumeButton = document.getElementById('volumeButton');
+        const volumeControls = document.getElementById('volumeControls');
+        const volumeSlider = document.getElementById('volumeSlider');
+        
+        const volumeIcon = volumeButton.querySelector('.material-icons');
+
+        // Toggle volume controls visibility
+        volumeButton.addEventListener('click', () => {
+            // Primeiro, alternamos a classe 'active'
+            volumeControls.classList.toggle('active');
+
+            // Depois, verificamos se a classe 'active' AGORA está presente
+            if (volumeControls.classList.contains('active')) {
+                volumeIcon.textContent = 'close'; // Ícone 'close' (um 'X')
+        		volumeContainer.classList.add('has-controls-active');
+            } else {
+                // Se a camada foi fechada, restaura o ícone de volume apropriado
+                // É melhor chamar updateVolumeIcon() aqui, 
+                // pois ela considera o volume atual e estado de mudo.
+                // Se você apenas definir para 'volume_up', 
+                // pode estar incorreto se o volume estiver mutado ou baixo.             
+                volumeIcon.textContent = 'volume_up';
+        		volumeContainer.classList.remove('has-controls-active'); // Remove a borda
+            }
+        });
+        
+        // Volume slider functionality
+        volumeSlider.addEventListener('input', () => {            
+            currentVolume = parseInt(volumeSlider.value);
+            // Mapeia o slider (0-100) para o range real (reservedVolume-100)
+            let realVolume = Math.max(reservedVolume, currentVolume);
+            mainAudio.volume = realVolume / 100;
+        });
+
+        // Defina o volume inicial considerando o volume reservado
+        mainAudio.volume = Math.max(reservedVolume, currentVolume) / 100;
+// ===================
+// Gerenciamento do Relógio
+// ===================
+function atualizarRelogio() {
+    const agora = new Date();
+    const horas = String(agora.getHours()).padStart(2, '0');
+    const minutos = String(agora.getMinutes()).padStart(2, '0');
+    const segundos = String(agora.getSeconds()).padStart(2, '0');
+    
+    document.getElementById('relogio').textContent = `${horas}:${minutos}:${segundos}`;
+
+    // Lógica para verificar o alarme
+    const horaAtual = `${horas}:${minutos}`;
+    
+    // Usamos um loop reverso para que a remoção de itens não cause problemas com o índice
+    for (let i = pausas.length - 1; i >= 0; i--) {
+        if (pausas[i].end === horaAtual && segundos === '00') {
+            // Tocar o alarme
+            playNotificationSound();
+            console.log('Alarme! Fim da pausa.');
+            
+            // Remover a pausa para que o alarme não toque novamente
+            pausas.splice(i, 1);
+            renderPausas(); // Re-renderiza a lista sem a pausa que já tocou
+        }
+    }
+}
+
+// ===================
+// Gerenciamento da Interface
+// ===================
+const radioFim = document.getElementById('radioFim');
+const radioDuracao = document.getElementById('radioDuracao');
+const inputFimGroup = document.getElementById('inputFimGroup');
+const inputDuracaoGroup = document.getElementById('inputDuracaoGroup');
+const inicioInput = document.getElementById('inicio');
+
+// A função `toggleInputs` esconde ou mostra os campos de acordo com o rádio selecionado.
+// CÓDIGO CORRIGIDO
+function toggleInputs() {
+    if (radioFim.checked) {
+        // Altere 'block' para 'flex'
+        inputFimGroup.style.display = 'flex'; 
+        inputDuracaoGroup.style.display = 'none';
+        document.getElementById('duracao').value = '';
+    } else {
+        inputFimGroup.style.display = 'none';
+        // Altere 'block' para 'flex'
+        inputDuracaoGroup.style.display = 'flex';
+        document.getElementById('fim').value = '';
+    }
+}
+
+// Adiciona os event listeners aos botões de rádio para gerenciar a interface.
+radioFim.addEventListener('change', toggleInputs);
+radioDuracao.addEventListener('change', toggleInputs);
+
+// Também precisamos lidar com o cálculo da duração.
+// Esta é uma função auxiliar para calcular a duração a partir do tempo de início e duração.
+function calcularFimDeDuracao(inicio, duracao) {
+    if (!inicio || !duracao) return '';
+
+    const [startH, startM] = inicio.split(':').map(Number);
+    const [durationH, durationM] = duracao.split(':').map(Number);
+    
+    let totalMinutosInicio = startH * 60 + startM;
+    let totalMinutosDuracao = durationH * 60 + durationM;
+    let totalMinutosFim = totalMinutosInicio + totalMinutosDuracao;
+    
+    let endH = Math.floor(totalMinutosFim / 60) % 24;
+    let endM = totalMinutosFim % 60;
+
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+}
+
+// ===================
+// Gerenciamento de Pausas
+// ===================
+// Este é o bloco anterior, mas com ajustes para os novos inputs de rádio.
+// Certifique-se de que os IDs abaixo batem com os do seu HTML.
+const pausaForm = document.querySelector('form'); // Seleciona o primeiro form
+const pausesList = document.getElementById('pauses-list');
+const duracaoInput = document.getElementById('duracao');
+const fimInput = document.getElementById('fim');
+
+let pausas = []; // Array para armazenar os objetos de pausa
+
+function formatarTempo(minutos) {
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+    return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+function calcularDiferencaEmMinutos(start, end) {
+    let [startH, startM] = start.split(':').map(Number);
+    let [endH, endM] = end.split(':').map(Number);
+    
+    let inicioMinutos = startH * 60 + startM;
+    let fimMinutos = endH * 60 + endM;
+
+    if (fimMinutos < inicioMinutos) {
+        fimMinutos += 24 * 60;
+    }
+
+    return fimMinutos - inicioMinutos;
+}
+
+function renderPausas() {
+    pausesList.innerHTML = '';
+    if (pausas.length === 0) {
+        pausesList.innerHTML = '<li style="text-align: center;">Nenhuma pausa ativa.</li>';
+        return;
+    }
+
+    pausas.forEach((pausa, index) => { // Adicione o 'index' aqui
+        const li = document.createElement('li');
+        li.innerHTML = `
+            ${pausa.start} - ${pausa.end} (${pausa.duration})
+            <button class="remove-btn" data-index="${index}">Remover</button>
+        `;
+        pausesList.appendChild(li);
+    });
+}
+
+pausesList.addEventListener('click', (event) => {
+    // Verifica se o clique foi em um botão com a classe 'remove-btn'
+    if (event.target.classList.contains('remove-btn')) {
+        const index = event.target.dataset.index; // Obtém o índice do data attribute
+        
+        // Remove a pausa do array 'pausas' usando o índice
+        pausas.splice(index, 1);
+        
+        // Atualiza a lista exibida no HTML
+        renderPausas();
+    }
+});
+
+// ===========================
+// addEventListener para Sw.js
+// ===========================
+pausaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    mainAudio.play();
+
+    if (!currentUser) {
+        alert('Usuário não autenticado. Por favor, recarregue a página.');
+        return;
+    }
+
+    // Pedir permissão para notificações, se ainda não tiver
+    const permissao = await Notification.requestPermission();
+    if (permissao !== 'granted') {
+        alert('Você precisa permitir as notificações para que os alarmes funcionem!');
+        return;
+    }
+
+    const inicio = inicioInput.value;
+    let fim = '';
+
+    if (radioFim.checked) {
+        fim = fimInput.value;
+    } else {
+        fim = calcularFimDeDuracao(inicio, duracaoInput.value);
+    }
+
+    if (!inicio || !fim) {
+        alert('Por favor, preencha os horários da pausa.');
+        return;
+    }
+
+    // --- LÓGICA DE AGENDAMENTO ---
+    // Agendaremos tanto o início quanto o fim da pausa
+
+    // 1. Agendar o INÍCIO
+    const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
+    await agendarNotificacao(currentUser.$id, inicio, inicioPayload);
+
+    // 2. Agendar o FIM
+    const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar!` };
+    await agendarNotificacao(currentUser.$id, fim, fimPayload);
+    
+    // O resto da sua lógica para exibir na tela pode continuar aqui...
+    const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
+    const novaPausa = {
+        start: inicio,
+        end: fim,
+        duration: formatarTempo(duracaoMinutos)
+    };
+    pausas.push(novaPausa);
+    renderPausas();
+    gerarToken();
+});
+
+
+// --- NOVA FUNÇÃO HELPER PARA CHAMAR O BACKEND ---
+async function agendarNotificacao(userId, hora, payload) {
+    // Converte a hora (ex: "14:30") para o formato de data completo UTC
+    const [horas, minutos] = hora.split(':');
+    const dataAlvo = new Date(); // Pega a data de hoje
+    dataAlvo.setHours(horas, minutos, 0, 0); // Define a hora e minuto
+
+    // Se o horário já passou hoje, agenda para o dia seguinte
+    if (dataAlvo < new Date()) {
+        dataAlvo.setDate(dataAlvo.getDate() + 1);
+    }
+
+    const targetTimeISO = dataAlvo.toISOString(); // Converte para "2025-09-20T17:30:00.000Z"
+
+    try {
+        console.log(`Enviando agendamento para ${targetTimeISO}...`);
+        const resultado = await functions.createExecution(
+            'agendar-notificacao', // ID da sua função de agendamento
+            JSON.stringify({
+                userId: userId,
+                targetTime: targetTimeISO,
+                payload: payload
+            })
+        );
+        console.log('Agendamento enviado com sucesso!', resultado);
+        alert(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
+    } catch (error) {
+        console.error('Falha ao agendar notificação:', error);
+        alert('Ocorreu um erro ao agendar o alarme.');
+    }
+}
+
+// ===================
+// Geração e Processamento do Token
+// ===================
+const tokenInput = document.getElementById('tokenInput');
+const loadInput = document.getElementById('loadInput');
+const copiarBtn = document.getElementById('copiarBtn');
+const carregarTokenBtn = document.getElementById('carregarTokenBtn');
+const statusMessage = document.getElementById('statusMessage');
+
+// Função para gerar o token com o novo padrão.
+function gerarToken() {
+    const pausasString = pausas.map(pausa => `${pausa.start}-${pausa.end}`).join(',');
+    const token = `MyPomodorys(${pausasString})`;
+    tokenInput.value = token;
+}
+
+// A função de processamento também precisa ser ajustada para remover o prefixo.
+function processarToken(token) {
+    statusMessage.textContent = '';
+    const prefixo = 'MyPomodorys(';
+    const sufixo = ')';
+
+    // 1. Validar se o token começa e termina com o padrão esperado.
+    if (!token.startsWith(prefixo) || !token.endsWith(sufixo)) {
+        statusMessage.textContent = 'Erro: Padrão do token inválido. Certifique-se de que o token começa com "MyPomodorys(...)".';
+        return null;
+    }
+
+    // 2. Extrair a parte do padrão que contém as pausas.
+    const pausasToken = token.substring(prefixo.length, token.length - sufixo.length);
+    const pausasString = pausasToken.split(',');
+    const novoArrayDePausas = [];
+
+    // O resto da lógica de validação e processamento permanece igual.
+    for (const pausaStr of pausasString) {
+        const partes = pausaStr.split('-');
+        if (partes.length !== 2) {
+            statusMessage.textContent = 'Erro: Padrão de pausa inválido. Esperado "hh:mm-hh:mm".';
+            return null;
+        }
+
+        const [inicio, fim] = partes;
+        if (!/^\d{2}:\d{2}$/.test(inicio) || !/^\d{2}:\d{2}$/.test(fim)) {
+            statusMessage.textContent = 'Erro: Formato de horário inválido (esperado hh:mm).';
+            return null;
+        }
+
+        const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
+        novoArrayDePausas.push({
+            start: inicio,
+            end: fim,
+            duration: formatarTempo(duracaoMinutos)
+        });
+    }
+
+    return novoArrayDePausas;
+}
+
+copiarBtn.addEventListener('click', () => {
+    gerarToken();
+    tokenInput.select();
+    document.execCommand('copy');
+    statusMessage.textContent = 'Token copiado!';
+});
+
+carregarTokenBtn.addEventListener('click', () => {
+    const token = loadInput.value;
+    if (token) {
+        const novoArrayDePausas = processarToken(token);
+        if (novoArrayDePausas) {
+            pausas = novoArrayDePausas;
+            renderPausas();
+            statusMessage.textContent = 'Pausas carregadas com sucesso!';
+            statusMessage.style.color = 'green';
+        }
+    } else {
+        statusMessage.textContent = 'Por favor, insira um token para carregar.';
+        statusMessage.style.color = 'red';
+    }
+});
+
+const popupModalOverlay = document.getElementById('popup-modal-overlay');
+        const popupModalStopAlarmButton = document.getElementById('popup-modal-stop-alarm');
+        
+		// Inicia toque alarma, para atividade fundo
+        function playNotificationSound() {
+
+            popupModalOverlay.classList.add('active');
+            if (notificationSound) {
+                // Pause o mainAudio temporariamente para a notificação ter prioridade
+                mainAudio.pause();
+                mainAudio.currentTime = 0; // Opcional, para recomeçar do zero depois
+
+                notificationSound.play().catch(e => console.error("Erro ao tocar o som da notificação:", e));
+            }
+        }
+
+        // botão 'Parar' do popup
+        popupModalStopAlarmButton.addEventListener('click', () => {
+            notificationSound.pause(); // <--- Pause o som da notificação
+            notificationSound.currentTime = 0; // <--- Opcional: Reinicia o som da notificação
+
+            // Reinicia a atividade em segundo plano APÓS o som da notificação ter parado
+            mainAudio.play()
+	        	.then(() => {
+	        	    console.log("Áudio iniciado (em loop).", "success");
+	        	})
+	        	.catch(error => {
+	        	    // Handle cases where autoplay is blocked or other errors occur
+	        	    appendLog(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
+	        	    // If audio fails to play, don't start the counter (or handle it differently)
+	        	    appendLog("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
+	        	}); 
+
+            popupModalOverlay.classList.remove('active');
+        });
+
+        // fechar o popup clicando fora
+        popupModalOverlay.addEventListener('click', (event) => {
+            if (event.target === popupModalOverlay) {
+                notificationSound.pause(); // <--- Pause o som da notificação
+                notificationSound.currentTime = 0; // <--- Opcional: Reinicia o som da notificação
+                popupModalOverlay.classList.remove('active');
+                mainAudio.play()
+	                .then(() => {
+	                    console.log("Áudio iniciado (em loop).", "success");
+	                })
+	                .catch(error => {
+	                    // Handle cases where autoplay is blocked or other errors occur
+	                    appendLog(`Erro ao iniciar áudio: ${error.message}. O áudio requer interação do usuário.`, "error");
+	                    // If audio fails to play, don't start the counter (or handle it differently)
+	                    appendLog("A atividade em segundo plano não foi iniciada devido ao erro do áudio.", "error");
+	                }); 
+            }
+        });
+        
+// ===================
+// Nova Função de Inicialização
+// ===================
+function init() {
+	volumeSlider.value = currentVolume;
+    loginAnonimo();
+    // Exibe a mensagem inicial de "Nenhuma pausa ativa"
+    renderPausas();
+
+    // Garante que o input de duração não esteja visível no início
+    // Isso é opcional, mas garante que a interface comece no estado certo.
+    toggleInputs();
+    
+    // Chama a função para exibir o relógio imediatamente
+    atualizarRelogio();
+    // Inicia a atualização do relógio a cada segundo
+    setInterval(atualizarRelogio, 1000);
+}
+
+// Chama a função de inicialização quando a página é carregada
+init();
+
+</script>
+</body>
+</html>
