@@ -11,7 +11,7 @@
     
     <style>
         :root {
-            --cor-principal: linear-gradient(-135deg, #171627, #111d4a, #171627, #111d4a);
+            --cor-principal: linear-gradient(-135deg, #0f0e1a, #0a1435, #0f0e1a, #0a1435);
             --cor-secundaria: linear-gradient(135deg, #4b0a0a 0%, #6b0c1e 50%, #3f0b14 100%); /* Vinho Escuro */
             --cor-acento: #993366; /* Tom mais claro de Vinho */
             --cor-texto: #00ccff; /* Azul neon */
@@ -688,57 +688,65 @@ pausesList.addEventListener('click', async (event) => { // <-- Adicione async aq
 // addEventListener para Sw.js
 // ===========================
 pausaForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault();
 
-    if (!currentUser) {
-        showNotification('Usuário não autenticado. Por favor, recarregue a página.');
-        return;
-    }
+    if (!currentUser) {
+        showNotification('Usuário não autenticado. Por favor, recarregue a página.');
+        return;
+    }
 
-    // --- LÓGICA DE PERMISSÃO ATUALIZADA ---
-    if (Notification.permission !== 'granted') {
-        showNotification('Para que os alarmes funcionem, você precisa permitir as notificações. Por favor, habilite-as nas configurações do seu navegador e recarregue a página.');
-        return;
-    }
+    // --- LÓGICA DE PERMISSÃO APRIMORADA ---
+    if (Notification.permission !== 'granted') {
+        showNotification('Para agendar, por favor, permita as notificações.');
+        await solicitarPermissaoDeNotificacao(); // Espera a resposta do usuário
 
-    const inicio = inicioInput.value;
-    let fim = '';
+        // DEPOIS de pedir, verificamos NOVAMENTE qual foi a resposta.
+        if (Notification.permission !== 'granted') {
+            // Se o usuário ainda assim não permitiu, aí sim nós paramos.
+            showNotification('A permissão é necessária para criar alarmes.');
+            return;
+        }
+        // Se a permissão foi concedida AGORA, o código continua e cria a pausa!
+    }
 
-    if (radioFim.checked) {
-        fim = fimInput.value;
-    } else {
-        fim = calcularFimDeDuracao(inicio, duracaoInput.value);
-    }
+    const inicio = inicioInput.value;
+    let fim = '';
 
-    if (!inicio || !fim) {
-        showNotification('Por favor, preencha os horários da pausa.');
-        return;
-    }
+    if (radioFim.checked) {
+        fim = fimInput.value;
+    } else {
+        fim = calcularFimDeDuracao(inicio, duracaoInput.value);
+    }
+
+    if (!inicio || !fim) {
+        showNotification('Por favor, preencha os horários da pausa.');
+        return;
+    }
 
     // --- LÓGICA DE AGENDAMENTO ---
-    // Agendaremos tanto o início quanto o fim da pausa
+    // Agendaremos tanto o início quanto o fim da pausa
 
-    // 1. Agendar o INÍCIO
-    const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
-    enviarMensagemParaSW(currentUser.$id, inicio, inicioPayload);
+    // 1. Agendar o INÍCIO
+    const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
+    enviarMensagemParaSW(currentUser.$id, inicio, inicioPayload);
 
-    // 2. Agendar o FIM
-    const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar ao trabalho!` };
-    enviarMensagemParaSW(currentUser.$id, fim, fimPayload);
-    
-    // O resto da sua lógica para exibir na tela pode continuar aqui...
-    const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
-    const novaPausa = {
-        id: Date.now(), // Adiciona um ID único
-        start: inicio,
-        end: fim,
-        duration: formatarTempo(duracaoMinutos)
-    };
-    await addPausa(novaPausa); // Salva no DB
-    pausas.push(novaPausa); // Adiciona ao array local
-    renderPausas();
+    // 2. Agendar o FIM
+    const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar ao trabalho!` };
+    enviarMensagemParaSW(currentUser.$id, fim, fimPayload);
+    
+    // ✅ ADICIONE A NOTIFICAÇÃO DE SUCESSO AQUI
+    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`);
 
-    gerarToken(); // gera lista de pausas para copiar e salvar as pausas
+    // O resto da sua lógica para exibir na tela pode continuar aqui...
+    const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
+    const novaPausa = {
+        start: inicio,
+        end: fim,
+        duration: formatarTempo(duracaoMinutos)
+    };
+    pausas.push(novaPausa);
+    renderPausas();
+    gerarToken();
 });
 
 
@@ -792,67 +800,103 @@ function gerarToken() {
 
 // A função de processamento também precisa ser ajustada para remover o prefixo.
 function processarToken(token) {
-    statusMessage.textContent = '';
-    const prefixo = 'MyPomodorys(';
-    const sufixo = ')';
+    const prefixo = 'MyPomodorys(';
+    const sufixo = ')';
 
-    // 1. Validar se o token começa e termina com o padrão esperado.
-    if (!token.startsWith(prefixo) || !token.endsWith(sufixo)) {
-        statusMessage.textContent = 'Erro: Padrão do token inválido. Certifique-se de que o token começa com "MyPomodorys(...)".';
-        return null;
-    }
+    // 1. Validar se o token começa e termina com o padrão esperado.
+    if (!token.startsWith(prefixo) || !token.endsWith(sufixo)) {
+        // ANTES: statusMessage.textContent = '...';
+        showNotification('Erro: Padrão do token inválido. Use o formato MyPomodorys(...)');
+        return null;
+    }
 
-    // 2. Extrair a parte do padrão que contém as pausas.
-    const pausasToken = token.substring(prefixo.length, token.length - sufixo.length);
-    const pausasString = pausasToken.split(',');
-    const novoArrayDePausas = [];
+    // 2. Extrair a parte do padrão que contém as pausas.
+    const pausasToken = token.substring(prefixo.length, token.length - sufixo.length);
+    const pausasString = pausasToken.split(',');
+    const novoArrayDePausas = [];
 
-    // O resto da lógica de validação e processamento permanece igual.
-    for (const pausaStr of pausasString) {
-        const partes = pausaStr.split('-');
-        if (partes.length !== 2) {
-            statusMessage.textContent = 'Erro: Padrão de pausa inválido. Esperado "hh:mm-hh:mm".';
-            return null;
-        }
+    for (const pausaStr of pausasString) {
+        const partes = pausaStr.split('-');
+        if (partes.length !== 2) {
+            // ANTES: statusMessage.textContent = '...';
+            showNotification('Erro: Padrão de pausa inválido. Esperado "hh:mm-hh:mm".');
+            return null;
+        }
 
-        const [inicio, fim] = partes;
-        if (!/^\d{2}:\d{2}$/.test(inicio) || !/^\d{2}:\d{2}$/.test(fim)) {
-            statusMessage.textContent = 'Erro: Formato de horário inválido (esperado hh:mm).';
-            return null;
-        }
+        const [inicio, fim] = partes;
+        if (!/^\d{2}:\d{2}$/.test(inicio) || !/^\d{2}:\d{2}$/.test(fim)) {
+            // ANTES: statusMessage.textContent = '...';
+            showNotification('Erro: Formato de horário inválido (esperado hh:mm).');
+            return null;
+        }
 
-        const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
-        novoArrayDePausas.push({
-            start: inicio,
-            end: fim,
-            duration: formatarTempo(duracaoMinutos)
-        });
-    }
+        const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
+        novoArrayDePausas.push({
+            id: Date.now() + Math.random(), // Adiciona um ID único ao carregar
+            start: inicio,
+            end: fim,
+            duration: formatarTempo(duracaoMinutos)
+        });
+    }
 
-    return novoArrayDePausas;
+    return novoArrayDePausas;
 }
 
 copiarBtn.addEventListener('click', () => {
-    gerarToken();
-    tokenInput.select();
-    document.execCommand('copy');
-    statusMessage.textContent = 'Token copiado!';
+    gerarToken();
+    tokenInput.select();
+    document.execCommand('copy');
+    // ANTES: statusMessage.textContent = 'Token copiado!';
+    showNotification('Token copiado para a área de transferência!');
 });
 
-carregarTokenBtn.addEventListener('click', () => {
-    const token = loadInput.value;
-    if (token) {
-        const novoArrayDePausas = processarToken(token);
-        if (novoArrayDePausas) {
+// PASSO 1: 'async' aqui
+carregarTokenBtn.addEventListener('click', async () => { 
+    const token = loadInput.value;
+
+    // --- LÓGICA DE PERMISSÃO (está perfeita) ---
+    if (Notification.permission !== 'granted') {
+        showNotification('Para agendar, por favor, permita as notificações.');
+        await solicitarPermissaoDeNotificacao(); 
+        if (Notification.permission !== 'granted') {
+            showNotification('A permissão é necessária para criar alarmes.');
+            return;
+        }
+    }
+
+    if (token) {
+        const novoArrayDePausas = processarToken(token);
+        if (novoArrayDePausas) {
+            // Limpa as pausas antigas antes de carregar as novas
+            for (const pausa of pausas) {
+                await deletePausa(pausa.id);
+            }
+
             pausas = novoArrayDePausas;
-            renderPausas();
-            statusMessage.textContent = 'Pausas carregadas com sucesso!';
-            statusMessage.style.color = 'green';
-        }
-    } else {
-        statusMessage.textContent = 'Por favor, insira um token para carregar.';
-        statusMessage.style.color = 'red';
-    }
+
+            // Salva e agenda as novas pausas
+            for (const pausa of pausas) {
+                await addPausa(pausa);
+                
+                const { start, end } = pausa;
+                if (!currentUser) {
+                    showNotification('Erro: Usuário não encontrado para agendar os alarmes.');
+                    return;
+                }
+                const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${start} está começando!` };
+                enviarMensagemParaSW(currentUser.$id, start, inicioPayload);
+                const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar!` };
+                enviarMensagemParaSW(currentUser.$id, end, fimPayload);
+            }
+
+            renderPausas();
+            // ANTES: statusMessage.textContent = '...';
+            showNotification('Pausas carregadas e agendadas com sucesso!');
+        }
+    } else {
+        // ANTES: statusMessage.textContent = '...';
+        showNotification('Por favor, insira um token para carregar.');
+    }
 });
 
 const popupModalOverlay = document.getElementById('popup-modal-overlay');
@@ -884,27 +928,28 @@ const popupModalOverlay = document.getElementById('popup-modal-overlay');
         });
 
 // Função enviar Mensagem Para SW
+// Função enviar Mensagem Para SW (Versão Corrigida e Simplificada)
 function enviarMensagemParaSW(userId, hora, payload) {
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    const [horas, minutos] = hora.split(':');
-    const dataAlvo = new Date();
-    dataAlvo.setHours(horas, minutos, 0, 0);
-    if (dataAlvo < new Date()) {
-      dataAlvo.setDate(dataAlvo.getDate() + 1);
-    }
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    const [horas, minutos] = hora.split(':');
+    const dataAlvo = new Date();
+    dataAlvo.setHours(horas, minutos, 0, 0);
+    if (dataAlvo < new Date()) {
+      dataAlvo.setDate(dataAlvo.getDate() + 1);
+    }
 
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_ALARM',
-      userId: userId,
-      time: dataAlvo.toISOString(),
-      payload: payload
-    });
-    console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
-    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`); // Feedback para o usuário
-  } else {
-    console.error('Service Worker não está ativo para agendar o alarme.');
-    showNotification('Alarme salvo localmente. Service Worker não está ativo.');
-  }
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SCHEDULE_ALARM',
+      userId: userId,
+      time: dataAlvo.toISOString(),
+      payload: payload
+    });
+    console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
+    // A LINHA PROBLEMÁTICA FOI REMOVIDA DAQUI
+  } else {
+    console.error('Service Worker não está ativo para agendar o alarme.');
+    showNotification('Alarme salvo localmente. Service Worker não está ativo.');
+  }
 }
 
 function showNotification(message) {
@@ -939,9 +984,7 @@ function showNotification(message) {
 // ===================
 // Função de Inicialização
 // ===================
-async function init() {
-    await solicitarPermissaoDeNotificacao();
-    
+async function init() {    
     await initDB(); // Inicia o banco de dados
     pausas = await getAllPausas(); // Carrega as pausas salvas
     renderPausas(); // Renderiza na tela
