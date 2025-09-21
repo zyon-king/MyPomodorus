@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Pomodorus</title>
+    <link rel="manifest" href="https://raw.githubusercontent.com/zyon-king/MyPomodorus/refs/heads/main/frontend/manifest.json">
+
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
         :root {
@@ -408,6 +410,8 @@
     <footer>
         <p>&copy; 2025 MyPomodorus. Todos os direitos reservados - ZyonKing | Fontanari,C.</p>
     </footer>
+    
+<script src="https://cdn.jsdelivr.net/gh/zyon-king/MyPomodorus@main/frontend/db.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@20.0.0"></script>
 <script>
@@ -665,17 +669,19 @@ function renderPausas() {
     });
 }
 
-pausesList.addEventListener('click', (event) => {
-    // Verifica se o clique foi em um botão com a classe 'remove-btn'
-    if (event.target.classList.contains('remove-btn')) {
-        const index = event.target.dataset.index; // Obtém o índice do data attribute
-        
-        // Remove a pausa do array 'pausas' usando o índice
-        pausas.splice(index, 1);
-        
-        // Atualiza a lista exibida no HTML
-        renderPausas();
-    }
+pausesList.addEventListener('click', async (event) => { // <-- Adicione async aqui
+    if (event.target.classList.contains('remove-btn')) {
+        const index = event.target.dataset.index;
+        const pausaParaRemover = pausas[index];
+        
+        // Só tenta deletar do DB se a pausa tem ID e as funções existem
+        if (pausaParaRemover.id && typeof deletePausa === 'function') {
+            await deletePausa(pausaParaRemover.id);
+        }
+        
+        pausas.splice(index, 1);
+        renderPausas();
+    }
 });
 
 // ===========================
@@ -723,13 +729,16 @@ pausaForm.addEventListener('submit', async (e) => {
     // O resto da sua lógica para exibir na tela pode continuar aqui...
     const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
     const novaPausa = {
+        id: Date.now(), // Adiciona um ID único
         start: inicio,
         end: fim,
         duration: formatarTempo(duracaoMinutos)
     };
-    pausas.push(novaPausa);
+    await addPausa(novaPausa); // Salva no DB
+    pausas.push(novaPausa); // Adiciona ao array local
     renderPausas();
-    gerarToken();
+
+    gerarToken(); // gera lista de pausas para copiar e salvar as pausas
 });
 
 
@@ -894,7 +903,7 @@ function enviarMensagemParaSW(userId, hora, payload) {
     showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`); // Feedback para o usuário
   } else {
     console.error('Service Worker não está ativo para agendar o alarme.');
-    showNotification('Service Worker não está ativo: Não foi possível agendar o alarme. Por favor, recarregue a página.');
+    showNotification('Alarme salvo localmente. Service Worker não está ativo.');
   }
 }
 
@@ -932,8 +941,11 @@ function showNotification(message) {
 // ===================
 async function init() {
     await solicitarPermissaoDeNotificacao();
-
-    renderPausas();
+    
+    await initDB(); // Inicia o banco de dados
+    pausas = await getAllPausas(); // Carrega as pausas salvas
+    renderPausas(); // Renderiza na tela
+    
     toggleInputs();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
