@@ -22,6 +22,9 @@ nomes genéricos (ex: "Anonymous User"). O mais recente será o seu.
 ​A primeira informação que aparecerá na página de detalhes 
 do usuário é o User ID. Você pode copiar esse valor diretamente de lá.
 **/
+
+// enviar-agendamentos/index.js
+
 const { Client, Databases, Messaging, Query } = require('node-appwrite');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
