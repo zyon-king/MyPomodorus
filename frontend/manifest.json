@@ -1,7 +1,7 @@
 {
   "name": "My Pomodorus",
   "short_name": "Pomodorus",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#171627",
   "theme_color": "#111d4a",
