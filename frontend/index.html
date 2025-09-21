@@ -688,95 +688,69 @@ pausesList.addEventListener('click', async (event) => { // <-- Adicione async aq
 // addEventListener para Sw.js
 // ===========================
 pausaForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (!currentUser) {
-        showNotification('Usuário não autenticado. Por favor, recarregue a página.');
-        return;
-    }
-
-    if (Notification.permission !== 'granted') {
-        showNotification('Para que os alarmes funcionem, você precisa permitir as notificações.');
-        return;
-    }
-
-    const inicio = inicioInput.value;
-    let fim = '';
-
-    if (radioFim.checked) {
-        fim = fimInput.value;
-    } else {
-        fim = calcularFimDeDuracao(inicio, duracaoInput.value);
-    }
-
-    if (!inicio || !fim) {
-        showNotification('Por favor, preencha os horários da pausa.');
-        return;
-    }
-
-    // --- LÓGICA DE AGENDAMENTO (continua igual) ---
-    const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
-    enviarMensagemParaSW(currentUser.$id, inicio, inicioPayload);
-
-    const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar ao trabalho!` };
-    enviarMensagemParaSW(currentUser.$id, fim, fimPayload);
-    
-    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`);
-    
-    // =============================================================
-    // ✅ CORREÇÃO: Salvar a nova pausa no IndexedDB
-    // =============================================================
-    const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
-    const novaPausa = {
-        id: Date.now(), // 1. Cria um ID único para a pausa
-        start: inicio,
-        end: fim,
-        duration: formatarTempo(duracaoMinutos)
-    };
-    
-    try {
-        await addPausa(novaPausa);     // 2. SALVA a nova pausa no IndexedDB
-        pausas.push(novaPausa);        // 3. Adiciona na lista da memória para exibição
-        renderPausas();                // 4. Atualiza a tela
-        console.log('Nova pausa salva no IndexedDB com sucesso!');
-    } catch (error) {
-        console.error('Falha ao salvar a nova pausa no IndexedDB:', error);
-        showNotification('Erro ao salvar a pausa.');
+    e.preventDefault();
+    if (!currentUser || Notification.permission !== 'granted') {
+        showNotification('É necessário permitir as notificações para criar um alarme.');
+        return;
     }
-    // =============================================================
+    const inicio = inicioInput.value;
+    let fim = '';
+    if (radioFim.checked) {
+        fim = fimInput.value;
+    } else {
+        fim = calcularFimDeDuracao(inicio, duracaoInput.value);
+    }
+    if (!inicio || !fim) {
+        showNotification('Por favor, preencha os horários da pausa.');
+        return;
+    }
 
-    gerarToken(); // A geração do token continua funcionando
+    // --- LÓGICA DE AGENDAMENTO NO SERVIDOR ---
+    const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa está começando!` };
+    await agendarNotificacao(currentUser.$id, inicio, inicioPayload);
+
+    const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa terminou.` };
+    await agendarNotificacao(currentUser.$id, fim, fimPayload);
+    
+    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`);
+    
+    // --- LÓGICA DE PERSISTÊNCIA NO INDEXEDDB ---
+    const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
+    const novaPausa = {
+        id: Date.now(),
+        start: inicio,
+        end: fim,
+        duration: formatarTempo(duracaoMinutos)
+    };
+    await addPausa(novaPausa);
+    pausas.push(novaPausa);
+    renderPausas();
+    gerarToken();
 });
 
 // --- NOVA FUNÇÃO HELPER PARA CHAMAR O BACKEND ---
 async function agendarNotificacao(userId, hora, payload) {
-    // Converte a hora (ex: "14:30") para o formato de data completo UTC
     const [horas, minutos] = hora.split(':');
-    const dataAlvo = new Date(); // Pega a data de hoje
-    dataAlvo.setHours(horas, minutos, 0, 0); // Define a hora e minuto
-
-    // Se o horário já passou hoje, agenda para o dia seguinte
+    const dataAlvo = new Date();
+    dataAlvo.setHours(horas, minutos, 0, 0);
     if (dataAlvo < new Date()) {
         dataAlvo.setDate(dataAlvo.getDate() + 1);
     }
-
-    const targetTimeISO = dataAlvo.toISOString(); // Converte para "2025-09-20T17:30:00.000Z"
+    const targetTimeISO = dataAlvo.toISOString();
 
     try {
-        console.log(`Enviando agendamento para ${targetTimeISO}...`);
-        const resultado = await functions.createExecution(
-            '68cf1fc2002e437c4272', // ID da sua função de agendamento
+        await functions.createExecution(
+            AGENDAR_FUNCTION_ID, // O ID da sua função 'agendar-notificacao'
             JSON.stringify({
                 userId: userId,
                 targetTime: targetTimeISO,
                 payload: payload
             })
         );
-        console.log('Agendamento enviado com sucesso!', resultado);
-        showNotification(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
+        console.log(`Agendamento para as ${hora} enviado para o servidor.`);
     } catch (error) {
-        console.error('Falha ao agendar notificação:', error);
-        showNotification('Ocorreu um erro ao agendar o alarme.');
+        console.error(`Falha ao agendar notificação para as ${hora}:`, error);
+        showNotification('Ocorreu um erro ao agendar o alarme no servidor.');
     }
 }
 
@@ -849,52 +823,46 @@ copiarBtn.addEventListener('click', () => {
 });
 
 // PASSO 1: 'async' aqui
-carregarTokenBtn.addEventListener('click', async () => { 
-    const token = loadInput.value;
+carregarTokenBtn.addEventListener('click', async () => {
+    if (Notification.permission !== 'granted') {
+        showNotification('Para agendar, por favor, permita as notificações primeiro.');
+        await solicitarPermissaoDeNotificacao();
+        if (Notification.permission !== 'granted') return;
+    }
+    if (!currentUser) {
+        showNotification('Usuário não autenticado. Por favor, recarregue a página.');
+        return;
+    }
+    const token = loadInput.value;
+    if (!token) {
+        showNotification('Por favor, insira um token para carregar.');
+        return;
+    }
+    
+    const novoArrayDePausas = processarToken(token);
+    if (novoArrayDePausas) {
+        // Limpa as pausas antigas do DB e do array local
+        for (const pausa of pausas) {
+            await deletePausa(pausa.id);
+        }
+        pausas = [];
 
-    // --- LÓGICA DE PERMISSÃO (está perfeita) ---
-    if (Notification.permission !== 'granted') {
-        showNotification('Para agendar, por favor, permita as notificações.');
-        await solicitarPermissaoDeNotificacao(); 
-        if (Notification.permission !== 'granted') {
-            showNotification('A permissão é necessária para criar alarmes.');
-            return;
-        }
-    }
+        // Adiciona e agenda as novas pausas
+        for (const pausa of novoArrayDePausas) {
+            await addPausa(pausa); // Salva no IndexedDB
+            pausas.push(pausa);   // Adiciona na lista local
 
-    if (token) {
-        const novoArrayDePausas = processarToken(token);
-        if (novoArrayDePausas) {
-            // Limpa as pausas antigas antes de carregar as novas
-            for (const pausa of pausas) {
-                await deletePausa(pausa.id);
-            }
-
-            pausas = novoArrayDePausas;
-
-            // Salva e agenda as novas pausas
-            for (const pausa of pausas) {
-                await addPausa(pausa);
-                
-                const { start, end } = pausa;
-                if (!currentUser) {
-                    showNotification('Erro: Usuário não encontrado para agendar os alarmes.');
-                    return;
-                }
-                const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${start} está começando!` };
-                enviarMensagemParaSW(currentUser.$id, start, inicioPayload);
-                const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar!` };
-                enviarMensagemParaSW(currentUser.$id, end, fimPayload);
-            }
-
-            renderPausas();
-            // ANTES: statusMessage.textContent = '...';
-            showNotification('Pausas carregadas e agendadas com sucesso!');
-        }
-    } else {
-        // ANTES: statusMessage.textContent = '...';
-        showNotification('Por favor, insira um token para carregar.');
-    }
+            // Agenda no servidor
+            const { start, end } = pausa;
+            const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${start} está começando!` };
+            await agendarNotificacao(currentUser.$id, start, inicioPayload);
+            const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar!` };
+            await agendarNotificacao(currentUser.$id, end, fimPayload);
+        }
+        
+        renderPausas();
+        showNotification('Pausas carregadas e agendadas com sucesso!');
+    }
 });
 
 const popupModalOverlay = document.getElementById('popup-modal-overlay');
@@ -924,31 +892,6 @@ const popupModalOverlay = document.getElementById('popup-modal-overlay');
                 popupModalOverlay.classList.remove('active');
             }
         });
-
-// Função enviar Mensagem Para SW
-// Função enviar Mensagem Para SW (Versão Corrigida e Simplificada)
-function enviarMensagemParaSW(userId, hora, payload) {
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    const [horas, minutos] = hora.split(':');
-    const dataAlvo = new Date();
-    dataAlvo.setHours(horas, minutos, 0, 0);
-    if (dataAlvo < new Date()) {
-      dataAlvo.setDate(dataAlvo.getDate() + 1);
-    }
-
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_ALARM',
-      userId: userId,
-      time: dataAlvo.toISOString(),
-      payload: payload
-    });
-    console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
-    // A LINHA PROBLEMÁTICA FOI REMOVIDA DAQUI
-  } else {
-    console.error('Service Worker não está ativo para agendar o alarme.');
-    showNotification('Alarme salvo localmente. Service Worker não está ativo.');
-  }
-}
 
 function showNotification(message) {
     const existingNotification = document.getElementById('notification-box');
