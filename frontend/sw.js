@@ -1,10 +1,10 @@
 // sw.js - Versão com SDK Global do Appwrite
 
 // 1. Importa o script do SDK para dentro do ambiente do Service Worker
-importScripts('https://cdn.jsdelivr.net/npm/appwrite@15.0.0/dist/browser/appwrite.global.js');
+importScripts('https://cdn.jsdelivr.net/npm/appwrite@20.0.0/dist/iife/sdk.js');
 
 // 2. Inicializa o Appwrite (semelhante ao que fazemos na página)
-const { Client, Functions } = Appwrite;
+const { Client, Functions } = self.Appwrite;
 
 // !!! ATENÇÃO: PREENCHA SUAS INFORMAÇÕES AQUI !!!
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
