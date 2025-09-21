@@ -38,7 +38,7 @@ module.exports = async ({ req, res, log }) => {
     return res.json({ success: false, message: 'Falha ao agendar notificação.' }, 500);
   }
 };*/
-const { Client, Messaging } = require('appwrite');
+const { Client, Messaging } = require('node-appwrite');
 
 module.exports = async ({ req, res, log, error }) => {
     try {
