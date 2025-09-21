@@ -1,57 +1,39 @@
-const { Client, Messaging } = require('node-appwrite');
+const { Client, Databases, ID } = require('node-appwrite');
 
 module.exports = async ({ req, res, log, error }) => {
+    // Inicializa o cliente Appwrite usando as Variáveis de Ambiente
+    const client = new Client()
+        .setEndpoint(process.env.APPWRITE_ENDPOINT)
+        .setProject(process.env.APPWRITE_PROJECT_ID)
+        .setKey(process.env.APPWRITE_API_KEY); // Pega a chave segura das variáveis
+
+    const databases = new Databases(client);
+
     try {
-        // Parse correto do body
-        const data = JSON.parse(req.body || '{}');
-        
-        let userId, title, messageBody;
-        
-        // Verificar se é chamada direta ou via scheduler
-        if (data.payload) {
-            // Vem do scheduler
-            userId = data.userId;
-            title = data.payload.title;
-            messageBody = data.payload.body;
-        } else {
-            // Chamada direta para teste
-            userId = data.userId;
-            title = data.title;
-            messageBody = data.body;
+        const body = JSON.parse(req.body || '{}');
+        const { userId, targetTime, payload } = body;
+
+        if (!userId || !targetTime || !payload) {
+            return res.json({ success: false, message: 'userId, targetTime, e payload são obrigatórios.' }, 400);
         }
-        
-        // Debug
-        log(`userId: ${userId}`);
-        log(`title: ${title}`);
-        log(`body: ${messageBody}`);
-        
-        if (!title) {
-            error('Title está vazio ou undefined');
-            return res.json({ success: false, error: 'Title é obrigatório' }, 400);
-        }
-        
-        // Resto da função permanece igual
-        const client = new Client()
-            .setEndpoint('https://nyc.cloud.appwrite.io/v1')
-            .setProject('686a67d5003a1b4b1bf9')
-            .setKey('sua_api_key');
-        
-        const messaging = new Messaging(client);
-        
-        const result = await messaging.createPush(
-            'unique-message-id-' + Date.now(),
-            title,
-            messageBody,
-            null,
-            [userId],
-            null, null, null, null, null, null, null, null, null
+
+        // Cria o documento na coleção de agendamentos
+        await databases.createDocument(
+            process.env.APPWRITE_DATABASE_ID,
+            process.env.APPWRITE_COLLECTION_ID,
+            ID.unique(),
+            {
+                userId: userId,
+                targetTime: targetTime,
+                payload: JSON.stringify(payload),
+            }
         );
-        
-        log('Notificação enviada com sucesso:', result);
-        return res.json({ success: true, messageId: result.$id });
-        
+
+        log(`Agendamento criado para o usuário ${userId} às ${targetTime}`);
+        return res.json({ success: true, message: 'Notificação agendada com sucesso.' });
+
     } catch (err) {
-        error('Erro ao enviar notificação:', err);
-        return res.json({ success: false, error: err.message });
+        error(`Erro ao agendar notificação: ${err.message}`);
+        return res.json({ success: false, error: err.message }, 500);
     }
 };
