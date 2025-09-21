@@ -1,3 +1,5 @@
+//agendar-notificacao/index.js
+
 const { Client, Databases, ID } = require('node-appwrite');
 
 module.exports = async ({ req, res, log, error }) => {
