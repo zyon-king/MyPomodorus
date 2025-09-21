@@ -10,13 +10,22 @@
     <style>
         :root {
             --cor-principal: linear-gradient(-135deg, #171627, #111d4a, #171627, #111d4a);
-            --cor-secundaria: #660033; /* Vinho Escuro */
+            --cor-secundaria: linear-gradient(135deg, #4b0a0a 0%, #6b0c1e 50%, #3f0b14 100%); /* Vinho Escuro */
             --cor-acento: #993366; /* Tom mais claro de Vinho */
             --cor-texto: #00ccff; /* Azul neon */
             --cor-fundo: linear-gradient(135deg, #000000, #3b0047, #660000, #000000); /* Gradiente de fundo */
             --sombra-leve: 0 4px 6px rgba(0, 0, 0, 0.2);
             --transicao-suave: all 0.3s ease-in-out;
         }
+        
+        :root {
+            --dark-blue: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            --wine: linear-gradient(135deg, #4b0a0a 0%, #6b0c1e 50%, #3f0b14 100%);
+            --light-wine: linear-gradient(135deg, #3c0a24 0%, #5e0b35 50%, #3c0a24 100%);
+            --text-color: #f0f0f0;
+            --border-color: #4a148c;
+        }
+
 
         * {
             box-sizing: border-box;
@@ -179,7 +188,7 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
             font-weight: 600;
-            background-color: var(--cor-secundaria);
+            background: var(--cor-secundaria);
             color: var(--cor-texto);
             border: none;
             border-radius: 8px;
@@ -200,7 +209,7 @@
         .remove-btn {
             margin-left: 10px;
             padding: 5px 10px;
-            background-color: var(--cor-secundaria);
+            background: var(--cor-secundaria);
             color: var(--cor-texto);
             border: none;
             border-radius: 5px;
@@ -391,6 +400,37 @@
             border-radius: 50%;
             background: #007bff;
             cursor: pointer;
+        }
+        
+        
+        /* --- */
+        #notification-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--cor-acento);
+            color: var(--cor-texto);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1000;
+        }
+        
+        #notification-box.show {
+            opacity: 1;
+        }
+
+        #notification-box .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1; /* Alinha o "x" verticalmente */
         }
     </style>
 </head>
@@ -605,7 +645,7 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
 async function solicitarPermissaoDeNotificacao() {
   // Verifica se o navegador suporta notificações
   if (!('Notification' in window)) {
-    alert('Este navegador não suporta notificações de desktop.');
+    showNotification('Este navegador não suporta notificações de desktop.');
     return;
   }
 
@@ -617,7 +657,7 @@ async function solicitarPermissaoDeNotificacao() {
   } else {
     console.log('Permissão para notificações foi NEGADA ou ignorada.');
     // Opcional: Mostrar uma mensagem mais amigável na tela
-    // alert('Para receber os alarmes, por favor, habilite as notificações para este site nas configurações do seu navegador.');
+    // showNotification('Para receber os alarmes, por favor, habilite as notificações para este site nas configurações do seu navegador.');
   }
 }
 
@@ -854,13 +894,13 @@ pausaForm.addEventListener('submit', async (e) => {
     mainAudio.play();
 
     if (!currentUser) {
-        alert('Usuário não autenticado. Por favor, recarregue a página.');
+        showNotification('Usuário não autenticado. Por favor, recarregue a página.');
         return;
     }
 
     // --- LÓGICA DE PERMISSÃO ATUALIZADA ---
     if (Notification.permission !== 'granted') {
-        alert('Para que os alarmes funcionem, você precisa permitir as notificações. Por favor, habilite-as nas configurações do seu navegador e recarregue a página.');
+        showNotification('Para que os alarmes funcionem, você precisa permitir as notificações. Por favor, habilite-as nas configurações do seu navegador e recarregue a página.');
         return;
     }
 
@@ -874,7 +914,7 @@ pausaForm.addEventListener('submit', async (e) => {
     }
 
     if (!inicio || !fim) {
-        alert('Por favor, preencha os horários da pausa.');
+        showNotification('Por favor, preencha os horários da pausa.');
         return;
     }
 
@@ -927,10 +967,10 @@ async function agendarNotificacao(userId, hora, payload) {
             })
         );
         console.log('Agendamento enviado com sucesso!', resultado);
-        alert(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
+        showNotification(`Alarme de ${payload.title.toLowerCase()} agendado para as ${hora}!`);
     } catch (error) {
         console.error('Falha ao agendar notificação:', error);
-        alert('Ocorreu um erro ao agendar o alarme.');
+        showNotification('Ocorreu um erro ao agendar o alarme.');
     }
 }
 
@@ -1087,12 +1127,42 @@ function enviarMensagemParaSW(userId, hora, payload) {
       payload: payload
     });
     console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
-    alert(`Alarme para "${payload.title}" agendado localmente!`); // Feedback para o usuário
+    showNotification(`Alarme para "${payload.title}" agendado localmente!`); // Feedback para o usuário
   } else {
     console.error('Service Worker não está ativo para agendar o alarme.');
-    alert('Não foi possível agendar o alarme. Por favor, recarregue a página.');
+    showNotification('Não foi possível agendar o alarme. Por favor, recarregue a página.');
   }
 }
+
+function showNotification(message) {
+    const existingNotification = document.getElementById('notification-box');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    const notificationBox = document.createElement('div');
+    notificationBox.id = 'notification-box';
+    notificationBox.textContent = message;
+
+    // Cria e adiciona o botão de fechar
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '&times;'; // Usa o caractere 'x'
+    notificationBox.appendChild(closeBtn);
+
+    document.body.appendChild(notificationBox);
+
+    // Força o navegador a aplicar o estilo inicial antes de adicionar a classe "show"
+    getComputedStyle(notificationBox).opacity;
+    notificationBox.classList.add('show');
+           
+    // Adiciona o evento de clique ao botão de fechar
+    closeBtn.addEventListener('click', () => {
+         // Limpa o temporizador para evitar que a notificação se feche sozinha
+        notificationBox.classList.remove('show');
+    });
+}
+
 // ===================
 // Função de Inicialização
 // ===================
