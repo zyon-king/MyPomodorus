@@ -984,17 +984,29 @@ function showNotification(message) {
 // ===================
 // Função de Inicialização
 // ===================
-async function init() {    
-    await initDB(); // Inicia o banco de dados
-    pausas = await getAllPausas(); // Carrega as pausas salvas
-    renderPausas(); // Renderiza na tela
+async function init() {
+    // 1. Primeiro, inicia a conexão com o banco de dados local
+    try {
+        await initDB();
+        // 2. DEPOIS, busca as pausas que já estavam salvas
+        pausas = await getAllPausas();
+        // 3. SÓ AGORA, renderiza as pausas na tela
+        renderPausas();
+        console.log(`${pausas.length} pausas carregadas do IndexedDB.`);
+    } catch (error) {
+        console.error("Erro ao inicializar o banco de dados:", error);
+    }
     
+    // 4. O resto da inicialização continua normalmente
     toggleInputs();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     
-    // Inicializar Appwrite após o relógio estar funcionando
-    loginAnonimo();
+    // O ideal é pedir a permissão APENAS com um clique de botão, como discutimos
+    // mas se quiser manter no init, tudo bem.
+    await solicitarPermissaoDeNotificacao();
+    
+    await loginAnonimo();
     registrarServiceWorker();
 }
 
