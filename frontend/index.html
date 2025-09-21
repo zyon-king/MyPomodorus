@@ -621,6 +621,23 @@ async function solicitarPermissaoDeNotificacao() {
   }
 }
 
+// Função unificada para disparar o alarme (Fallback)
+function dispararNotificacao(title, body) {
+    console.log(`FALLBACK: Disparando notificação - ${title}`);
+    
+    // 1. Tenta mostrar a notificação de desktop
+    if (Notification.permission === "granted") {
+        new Notification(title, {
+            body: body,
+            icon: "icon-192x192.png" // Opcional, mas recomendado
+        });
+    } else {
+        console.log("Permissão de notificação não concedida, tocando apenas o som.");
+    }
+
+    // 2. Toca o som do alarme em todos os casos
+    playNotificationSound();
+}
         // ============================================
         // TOCAR AUDIO PARA MANTER ATIVIDADE DA PAGINA:
         // ============================================
@@ -682,31 +699,40 @@ async function solicitarPermissaoDeNotificacao() {
 // ===================
 // Gerenciamento do Relógio
 // ===================
-// Cole esta versão no lugar da sua função antiga
 function atualizarRelogio() {
     const agora = new Date();
     const horas = String(agora.getHours()).padStart(2, '0');
     const minutos = String(agora.getMinutes()).padStart(2, '0');
     const segundos = String(agora.getSeconds()).padStart(2, '0');
-
+    
     document.getElementById('relogio').textContent = `${horas}:${minutos}:${segundos}`;
 
-    // LÓGICA DE FALLBACK: só executa se o Service Worker não estiver ativo
-    if (!serviceWorkerAtivo) {
-        const horaAtual = `${horas}:${minutos}`;
+    const horaAtual = `${horas}:${minutos}`;
+    
+    // Verificar o início da pausa
+    for (let i = pausas.length - 1; i >= 0; i--) {
+        if (pausas[i].start === horaAtual && segundos === '00') {
+            // Tocar o alarme para o início da pausa
+            console.log(`Alarme! Início da pausa às ${horaAtual}.`);
+            playNotificationSound();
+            dispararNotificacao('Início da Pausa', `Sua pausa está começando agora!`);
+            
+            // Marca como iniciada (opcional)
+            pausas[i].iniciada = true;
+            renderPausas();
+            continue; // Agora o continue está no lugar correto
+        }
 
-        for (let i = pausas.length - 1; i >= 0; i--) {
-            const pausa = pausas[i];
-            // Checa tanto o início quanto o fim
-            if ((pausa.start === horaAtual || pausa.end === horaAtual) && segundos === '00') {
-                console.log('FALLBACK: Alarme sonoro disparado pela página!');
-                playNotificationSound();
-
-                // Remove a pausa para não tocar de novo (opcional, mas recomendado)
-                pausas.splice(i, 1);
-                renderPausas();
-                break; // Sai do loop para não tocar vários alarmes no mesmo minuto
-            }
+        // Lógica para verificar o fim da pausa
+        if (pausas[i].end === horaAtual && segundos === '00') {
+            // Tocar o alarme para o fim da pausa
+            console.log(`Alarme! Fim da pausa às ${horaAtual}.`);
+            playNotificationSound();
+            dispararNotificacao('Fim da Pausa', `Sua pausa terminou. Hora de voltar!`);
+            
+            // Remover a pausa após tocar o alarme
+            pausas.splice(i, 1);
+            renderPausas();
         }
     }
 }
@@ -1070,8 +1096,8 @@ function enviarMensagemParaSW(userId, hora, payload) {
 // ===================
 // Função de Inicialização
 // ===================
-function init() {
-    solicitarPermissaoDeNotificacao();
+async function init() {
+    await solicitarPermissaoDeNotificacao();
 
     volumeSlider.value = currentVolume;
     renderPausas();
