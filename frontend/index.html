@@ -695,18 +695,9 @@ pausaForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // --- LÓGICA DE PERMISSÃO APRIMORADA ---
     if (Notification.permission !== 'granted') {
-        showNotification('Para agendar, por favor, permita as notificações.');
-        await solicitarPermissaoDeNotificacao(); // Espera a resposta do usuário
-
-        // DEPOIS de pedir, verificamos NOVAMENTE qual foi a resposta.
-        if (Notification.permission !== 'granted') {
-            // Se o usuário ainda assim não permitiu, aí sim nós paramos.
-            showNotification('A permissão é necessária para criar alarmes.');
-            return;
-        }
-        // Se a permissão foi concedida AGORA, o código continua e cria a pausa!
+        showNotification('Para que os alarmes funcionem, você precisa permitir as notificações.');
+        return;
     }
 
     const inicio = inicioInput.value;
@@ -723,32 +714,39 @@ pausaForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // --- LÓGICA DE AGENDAMENTO ---
-    // Agendaremos tanto o início quanto o fim da pausa
-
-    // 1. Agendar o INÍCIO
+    // --- LÓGICA DE AGENDAMENTO (continua igual) ---
     const inicioPayload = { title: 'Início da Pausa', body: `Sua pausa programada para as ${inicio} está começando!` };
     enviarMensagemParaSW(currentUser.$id, inicio, inicioPayload);
 
-    // 2. Agendar o FIM
     const fimPayload = { title: 'Fim da Pausa', body: `Sua pausa programada terminou. Hora de voltar ao trabalho!` };
     enviarMensagemParaSW(currentUser.$id, fim, fimPayload);
     
-    // ✅ ADICIONE A NOTIFICAÇÃO DE SUCESSO AQUI
-    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`);
-
-    // O resto da sua lógica para exibir na tela pode continuar aqui...
+    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`);
+    
+    // =============================================================
+    // ✅ CORREÇÃO: Salvar a nova pausa no IndexedDB
+    // =============================================================
     const duracaoMinutos = calcularDiferencaEmMinutos(inicio, fim);
     const novaPausa = {
+        id: Date.now(), // 1. Cria um ID único para a pausa
         start: inicio,
         end: fim,
         duration: formatarTempo(duracaoMinutos)
     };
-    pausas.push(novaPausa);
-    renderPausas();
-    gerarToken();
-});
+    
+    try {
+        await addPausa(novaPausa);     // 2. SALVA a nova pausa no IndexedDB
+        pausas.push(novaPausa);        // 3. Adiciona na lista da memória para exibição
+        renderPausas();                // 4. Atualiza a tela
+        console.log('Nova pausa salva no IndexedDB com sucesso!');
+    } catch (error) {
+        console.error('Falha ao salvar a nova pausa no IndexedDB:', error);
+        showNotification('Erro ao salvar a pausa.');
+    }
+    // =============================================================
 
+    gerarToken(); // A geração do token continua funcionando
+});
 
 // --- NOVA FUNÇÃO HELPER PARA CHAMAR O BACKEND ---
 async function agendarNotificacao(userId, hora, payload) {
