@@ -891,7 +891,7 @@ function enviarMensagemParaSW(userId, hora, payload) {
       payload: payload
     });
     console.log(`Mensagem de agendamento para as ${hora} enviada para o Service Worker.`);
-    showNotification(`Alarme para "${payload.title}" agendado!`); // Feedback para o usuário
+    showNotification(`Pausa agendada com sucesso! Início: ${inicio} | Fim: ${fim}`); // Feedback para o usuário
   } else {
     console.error('Service Worker não está ativo para agendar o alarme.');
     showNotification('Service Worker não está ativo: Não foi possível agendar o alarme. Por favor, recarregue a página.');
