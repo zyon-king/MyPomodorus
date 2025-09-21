@@ -1,3 +1,27 @@
+/**
+Modelo de execution
+{
+    "userId": "68cfd2a258154b68a3f0",
+    "targetTime": "2025-09-21T10:35:00.000Z",
+    "payload": {
+        "title": "Teste Manual Direto",
+        "body": "Esta notificação foi disparada por um POST manual."
+    }
+}
+
+Opção 1: Encontrar o ID no Painel do Appwrite (Mais Rápido)
+​Você pode encontrar seu ID de usuário diretamente no painel do 
+Appwrite, mesmo pelo navegador do celular.
+​Abra seu projeto no painel do Appwrite.
+​No menu, vá para a seção Auth (Autenticação).
+​Clique na aba Users (Usuários).
+​Você verá uma lista de usuários. Como você usou o login 
+anônimo, provavelmente haverá um ou mais usuários com 
+nomes genéricos (ex: "Anonymous User"). O mais recente será o seu.
+​Clique no ID do usuário mais recente da lista.
+​A primeira informação que aparecerá na página de detalhes 
+do usuário é o User ID. Você pode copiar esse valor diretamente de lá.
+**/
 const { Client, Databases, Messaging, Query } = require('node-appwrite');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
