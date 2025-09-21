@@ -3,6 +3,18 @@ const { Client, Databases, Messaging, Query } = require('node-appwrite');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 module.exports = async ({ res, log }) => {
+    // Debug das variáveis de ambiente
+    log(`APPWRITE_ENDPOINT: ${process.env.APPWRITE_ENDPOINT}`);
+    log(`APPWRITE_PROJECT_ID: ${process.env.APPWRITE_PROJECT_ID}`);
+    log(`APPWRITE_DATABASE_ID: ${process.env.APPWRITE_DATABASE_ID}`);
+    log(`APPWRITE_COLLECTION_ID: ${process.env.APPWRITE_COLLECTION_ID}`);
+    log(`APPWRITE_API_KEY: ${process.env.APPWRITE_API_KEY ? '[DEFINIDA]' : '[NÃO DEFINIDA]'}`);
+    
+    // Verificar se todas as variáveis necessárias estão definidas
+    if (!process.env.APPWRITE_COLLECTION_ID) {
+        log('ERRO: APPWRITE_COLLECTION_ID não está definida');
+        return res.json({ success: false, message: 'Configuração incompleta: COLLECTION_ID' }, 500);
+    }
     const client = new Client()
         .setEndpoint(process.env.APPWRITE_ENDPOINT)
         .setProject(process.env.APPWRITE_PROJECT_ID)
