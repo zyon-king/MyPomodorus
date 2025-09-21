@@ -566,6 +566,8 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
 // ===================
 // Bloco - INICIALIZAÇÃO APPWRITE | Fim
 // ===================
+    let serviceWorkerAtivo = false;
+
     const mainAudio = new Audio('https://raw.githubusercontent.com/w3teal/awesome-ringtone/main/Google%20Pixel/2021%20-%20Your%20New%20Adventure.mp3');
         
     const notificationSound = new Audio('https://github.com/w3teal/awesome-ringtone/raw/refs/heads/main/Vivo/2022%20-%20Indomitable%20will.mp3'); // Certifique-se de ter um arquivo notification.mp3
@@ -597,6 +599,27 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
     fecharCarregarBtn.addEventListener('click', () => {
         carregarSection.style.display = 'none';
     });
+// ============================
+// Permissão para Notificações
+// ============================
+async function solicitarPermissaoDeNotificacao() {
+  // Verifica se o navegador suporta notificações
+  if (!('Notification' in window)) {
+    alert('Este navegador não suporta notificações de desktop.');
+    return;
+  }
+
+  // Solicita a permissão. O navegador vai mostrar o popup.
+  const permissao = await Notification.requestPermission();
+
+  if (permissao === 'granted') {
+    console.log('Permissão para notificações foi CONCEDIDA!');
+  } else {
+    console.log('Permissão para notificações foi NEGADA ou ignorada.');
+    // Opcional: Mostrar uma mensagem mais amigável na tela
+    // alert('Para receber os alarmes, por favor, habilite as notificações para este site nas configurações do seu navegador.');
+  }
+}
 
         // ============================================
         // TOCAR AUDIO PARA MANTER ATIVIDADE DA PAGINA:
@@ -659,27 +682,31 @@ Isso garantirá que, mesmo com a função de economia de memória ativada, a aba
 // ===================
 // Gerenciamento do Relógio
 // ===================
+// Cole esta versão no lugar da sua função antiga
 function atualizarRelogio() {
     const agora = new Date();
     const horas = String(agora.getHours()).padStart(2, '0');
     const minutos = String(agora.getMinutes()).padStart(2, '0');
     const segundos = String(agora.getSeconds()).padStart(2, '0');
-    
+
     document.getElementById('relogio').textContent = `${horas}:${minutos}:${segundos}`;
 
-    // Lógica para verificar o alarme
-    const horaAtual = `${horas}:${minutos}`;
-    
-    // Usamos um loop reverso para que a remoção de itens não cause problemas com o índice
-    for (let i = pausas.length - 1; i >= 0; i--) {
-        if (pausas[i].end === horaAtual && segundos === '00') {
-            // Tocar o alarme
-            playNotificationSound();
-            console.log('Alarme! Fim da pausa.');
-            
-            // Remover a pausa para que o alarme não toque novamente
-            pausas.splice(i, 1);
-            renderPausas(); // Re-renderiza a lista sem a pausa que já tocou
+    // LÓGICA DE FALLBACK: só executa se o Service Worker não estiver ativo
+    if (!serviceWorkerAtivo) {
+        const horaAtual = `${horas}:${minutos}`;
+
+        for (let i = pausas.length - 1; i >= 0; i--) {
+            const pausa = pausas[i];
+            // Checa tanto o início quanto o fim
+            if ((pausa.start === horaAtual || pausa.end === horaAtual) && segundos === '00') {
+                console.log('FALLBACK: Alarme sonoro disparado pela página!');
+                playNotificationSound();
+
+                // Remove a pausa para não tocar de novo (opcional, mas recomendado)
+                pausas.splice(i, 1);
+                renderPausas();
+                break; // Sai do loop para não tocar vários alarmes no mesmo minuto
+            }
         }
     }
 }
@@ -805,10 +832,9 @@ pausaForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Pedir permissão para notificações, se ainda não tiver
-    const permissao = await Notification.requestPermission();
-    if (permissao !== 'granted') {
-        alert('Você precisa permitir as notificações para que os alarmes funcionem!');
+    // --- LÓGICA DE PERMISSÃO ATUALIZADA ---
+    if (Notification.permission !== 'granted') {
+        alert('Para que os alarmes funcionem, você precisa permitir as notificações. Por favor, habilite-as nas configurações do seu navegador e recarregue a página.');
         return;
     }
 
@@ -1045,6 +1071,8 @@ function enviarMensagemParaSW(userId, hora, payload) {
 // Função de Inicialização
 // ===================
 function init() {
+    solicitarPermissaoDeNotificacao();
+
     volumeSlider.value = currentVolume;
     renderPausas();
     toggleInputs();
@@ -1065,6 +1093,7 @@ function registrarServiceWorker() {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
         console.log('Service Worker registrado com sucesso:', registration);
+        serviceWorkerAtivo = true; // <-- Adicione esta linha
       })
       .catch(error => {
         console.error('Falha ao registrar o Service Worker:', error);
